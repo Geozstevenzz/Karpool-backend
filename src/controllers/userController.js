@@ -40,5 +40,29 @@ const userSignup = async (req, res) => {
     }
 };
 
+const validateOTP = async (req, res) => {
+    const { email, phone, otp } = req.body;
 
-module.exports = { userSignup }
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE (email = $1 OR userphone = $2) AND otp = $3 AND otp_expiry > NOW()',
+            [email, phone, otp]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(400).send({ error: 'Invalid or expired OTP' });
+        }
+
+        await pool.query(
+            'UPDATE users SET otp = NULL, otp_expiry = NULL WHERE email = $1 OR userphone = $2',
+            [email, phone]
+        );
+
+        res.send({ message: 'OTP validated successfully' });
+    } catch (error) {
+        res.status(500).send({ error: 'Error during OTP validation' });
+    }
+};
+
+
+module.exports = { userSignup, validateOTP }
