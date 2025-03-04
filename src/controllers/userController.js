@@ -1,6 +1,8 @@
 const pool = require('../utils/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken')
 const sendOtp = require('../utils/otp');
+require('dotenv').config();
 
 
 const userSignup = async (req, res) => {
@@ -64,5 +66,50 @@ const validateOTP = async (req, res) => {
     }
 };
 
+const loginHandler = async (req, res) => {
+    const { email, password, platform } = req.body;
 
-module.exports = { userSignup, validateOTP }
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(401).send({ error: 'Invalid credentials' });
+        }
+
+        const user = result.rows[0];
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).send({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: `${process.env.JWT_EXPIRES_IN}h` });
+
+
+        if (platform === 'web') {
+            // Web: Set the token in an HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production', // Enable in production (HTTPS only)
+                sameSite: 'strict', // Prevent CSRF attacks
+                maxAge: 3600000, // 1 hour
+            });
+            res.json({ message: 'Logged in successfully' });
+        } else {
+            // Mobile: Return the token in the response body
+            res.send({ token });
+        }
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ error: 'Error during login' });
+    }
+};
+
+
+
+module.exports = { userSignup, validateOTP, loginHandler }
