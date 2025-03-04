@@ -98,10 +98,10 @@ const loginHandler = async (req, res) => {
                 sameSite: 'strict', // Prevent CSRF attacks
                 maxAge: 3600000, // 1 hour
             });
-            res.json({ message: 'Logged in successfully' });
+            res.send({ user });
         } else {
             // Mobile: Return the token in the response body
-            res.send({ token });
+            res.send({ user,token });
         }
 
     } catch (error) {
