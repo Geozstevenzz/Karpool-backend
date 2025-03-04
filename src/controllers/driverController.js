@@ -65,7 +65,46 @@ const createTripHandler = async (req, res) => {
     } finally {
         client.release();
     }
-}
+};
+
+const registerVehicle = async (req, res) => {
+    try {
+        const { userID, vehicleName, vehicleColor, vehicleNumber, vehicleAverage } = req.body;
+
+        // Check if the user exists
+        const userCheck = await pool.query("SELECT * FROM Users WHERE UserID = $1", [userID]);
+        if (userCheck.rowCount === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if the user is a driver
+        const driverCheck = await pool.query("SELECT DriverID FROM Drivers WHERE UserID = $1", [userID]);
+        let driverID;
+
+        if (driverCheck.rowCount === 0) {
+            // If user is not a driver, insert them into Drivers table
+            const newDriver = await pool.query(
+                "INSERT INTO Drivers (UserID) VALUES ($1) RETURNING DriverID",
+                [userID]
+            );
+            driverID = newDriver.rows[0].driverid;
+        } else {
+            driverID = driverCheck.rows[0].driverid;
+        }
+
+        // Register the vehicle
+        const vehicleInsert = await pool.query(
+            "INSERT INTO Vehicles (VehicleName, VehicleColor, VehicleNumber, VehicleAverage, DriverID) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [vehicleName, vehicleColor, vehicleNumber, vehicleAverage, driverID]
+        );
+
+        res.status(201).json({ message: "Vehicle registered successfully", vehicle: vehicleInsert.rows[0] });
+
+    } catch (error) {
+        console.error("Error registering vehicle:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 
 
-module.exports = { createTripHandler };
+module.exports = { createTripHandler, registerVehicle };
