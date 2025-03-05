@@ -71,7 +71,7 @@ const loginHandler = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
+            'SELECT * FROM users JOIN drivers ON users.userid = drivers.userid WHERE email = $1 AND otp IS NULL',
             [email]
         );
 
