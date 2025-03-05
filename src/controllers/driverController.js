@@ -110,5 +110,68 @@ const registerVehicle = async (req, res) => {
     }
 };
 
+const acceptPassengerReq = async (req, res) => {
+    try {
+        const { requestId, tripId } = req.body;
 
-module.exports = { createTripHandler, registerVehicle };
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+
+            // Update request status to ACCEPTED
+            await client.query(
+                `UPDATE TripRequests 
+                 SET Status = 'ACCEPTED' 
+                 WHERE RequestID = $1 AND TripID = $2`,
+                [requestId, tripId]
+            );
+
+            // Insert into TripPassengers table
+            await client.query(
+                `INSERT INTO TripPassengers (TripID, PassengerID) 
+                 VALUES ($2, (SELECT PassengerID FROM TripRequests WHERE RequestID = $1))`,
+                [requestId, tripId]
+            );
+
+            await client.query("COMMIT");
+            client.release();
+
+            res.json({ message: "Passenger request accepted" });
+
+        } catch (err) {
+            await client.query("ROLLBACK");
+            client.release();
+            console.error("Error accepting passenger request:", err);
+            res.status(500).json({ message: "Server error" });
+        }
+    } catch (err) {
+        console.error("Database connection error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const rejectPassengerReq = async (req, res) => {
+    try {
+        const { requestId, tripId } = req.body;
+
+        const result = await pool.query(
+            `UPDATE TripRequests 
+            SET Status = 'REJECTED' 
+            WHERE RequestID = $1 AND TripID = $2`,
+            [requestId, tripId]
+        );
+
+        if (result.rowCount > 0) {
+            res.json({ message: "Passenger request rejected" });
+        } else {
+            res.status(404).json({ message: "Request not found" });
+        }
+
+    } catch (err) {
+        console.error("Error rejecting passenger request:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq };

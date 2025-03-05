@@ -33,7 +33,13 @@ const userSignup = async (req, res) => {
         const values = [name, phone, email, address, hashedPassword, otp || null, otpExpiry || null];
 
         const { rows } = await pool.query(query, values);
+
         await sendOtp(email, phone, otp);
+        await pool.query(
+            `INSERT INTO Passengers (UserID) 
+             SELECT $1 WHERE NOT EXISTS (SELECT 1 FROM Passengers WHERE UserID = $1)`,
+            [rows[0].userid]
+        );
 
         res.status(201).json({ message: "User registered successfully", user: rows[0] });
     } catch (error) {

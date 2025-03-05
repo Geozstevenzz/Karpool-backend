@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { createTripHandler } = require("../../controllers/driverController");
+const { createTripHandler, acceptPassengerReq, registerVehicle, rejectPassengerReq } = require("../../controllers/driverController");
 const authenticateUser = require("../../middlewares/authenticateUser");
-const { registerVehicle } = require("../../controllers/driverController");
 
 router.post("/createTrip", authenticateUser, createTripHandler );
 router.post("/registerVehicle",authenticateUser, registerVehicle);
+router.post("/acceptPassengerReq",authenticateUser, acceptPassengerReq)
+router.post("/rejectPassengerReq", authenticateUser, rejectPassengerReq);
 
 
 module.exports = router;

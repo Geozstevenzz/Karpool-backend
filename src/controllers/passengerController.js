@@ -99,6 +99,24 @@ const getTripsHandler = async (req , res) => {
         console.error('Error fetching trips:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
-module.exports = { getTripsHandler }
+const tripJoinReq = async (req, res) => {
+  try {
+      const { tripId, passengerId } = req.body;
+
+      const result = await pool.query(
+          `INSERT INTO TripRequests (TripID, PassengerID, Status) 
+           VALUES ($1, $2, 'PENDING') RETURNING RequestID`,
+          [tripId, passengerId]
+      );
+
+      res.json({ message: "Trip join request sent", requestId: result.rows[0].requestid });
+
+  } catch (err) {
+      console.error("Error requesting to join trip:", err);
+      res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { getTripsHandler, tripJoinReq }
