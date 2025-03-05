@@ -71,12 +71,12 @@ const loginHandler = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT * FROM users JOIN drivers ON users.userid = drivers.userid WHERE email = $1 AND otp IS NULL',
+            'SELECT users.userid, users.username, users.userphone, users.userinterests, users.isdriver, users.password, users.profile_photo, users.email, users.address, drivers.driverid FROM users LEFT JOIN drivers ON users.userid = drivers.userid WHERE email = $1 AND otp IS NULL',
             [email]
         );
 
         if (result.rowCount === 0) {
-            return res.status(401).send({ error: 'Invalid credentials' });
+            return res.status(401).send({ error: 'No email found' });
         }
 
         const user = result.rows[0];

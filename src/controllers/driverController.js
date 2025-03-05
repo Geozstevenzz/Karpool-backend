@@ -87,6 +87,10 @@ const registerVehicle = async (req, res) => {
                 "INSERT INTO Drivers (UserID) VALUES ($1) RETURNING DriverID",
                 [userID]
             );
+            await pool.query(
+                `UPDATE Users SET IsDriver = TRUE WHERE UserID = $1`,
+                [userID]
+            );
             driverID = newDriver.rows[0].driverid;
         } else {
             driverID = driverCheck.rows[0].driverid;
