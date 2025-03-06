@@ -93,7 +93,7 @@ const loginHandler = async (req, res) => {
             return res.status(401).send({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: `${process.env.JWT_EXPIRES_IN}h` });
+        const token = jwt.sign({ id: user.userid }, process.env.JWT_SECRET, { expiresIn: `${process.env.JWT_EXPIRES_IN}h` });
 
 
         if (platform === 'web') {
@@ -116,6 +116,45 @@ const loginHandler = async (req, res) => {
     }
 };
 
+const getUpcomingTrips = async (req, res) => {
+    try {
+        const userId = req.user;
+
+        const upcomingTrips = await pool.query(
+            `SELECT * FROM Trips 
+             WHERE (DriverID = (SELECT DriverID FROM Drivers WHERE UserID = $1) 
+             OR TripID IN (SELECT TripID FROM Passengers WHERE UserID = $1))
+             AND Status = 'upcoming'`,
+            [userId]
+        );
+
+        res.json({ upcomingTrips: upcomingTrips.rows });
+
+    } catch (err) {
+        console.error("Error fetching upcoming trips:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const getAllTrips = async (req, res) => {
+    try {
+        const userId = req.user;
+
+        const allTrips = await pool.query(
+            `SELECT * FROM Trips 
+             WHERE (DriverID = (SELECT DriverID FROM Drivers WHERE UserID = $1) 
+             OR TripID IN (SELECT TripID FROM Passengers WHERE UserID = $1))`,
+            [userId]
+        );
+
+        res.json({ allTrips: allTrips.rows });
+
+    } catch (err) {
+        console.error("Error fetching all trips:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 
 
-module.exports = { userSignup, validateOTP, loginHandler }
+
+module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips }

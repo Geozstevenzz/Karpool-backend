@@ -173,5 +173,37 @@ const rejectPassengerReq = async (req, res) => {
     }
 };
 
+//router.post("/trips/:tripId/complete",
+const tripCompleted = async (req, res) => {
+    try {
+        const userId = req.user; 
+        console.log(userId)
+        const { tripId } = req.params; // tripId from URL
 
-module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq };
+        // Check if the user is the driver of the trip
+        const driverCheck = await pool.query(
+            `SELECT TripID FROM Trips WHERE TripID = $1 AND DriverID = 
+             (SELECT DriverID FROM Drivers WHERE UserID = $2)`,
+            [tripId, userId]
+        );
+
+        if (driverCheck.rows.length === 0) {
+            return res.status(403).json({ message: "Only the driver can complete this trip" });
+        }
+
+        // Update trip status to 'completed'
+        await pool.query(
+            `UPDATE Trips SET Status = 'completed' WHERE TripID = $1`,
+            [tripId]
+        );
+
+        res.json({ message: "Trip marked as completed successfully" });
+
+    } catch (err) {
+        console.error("Error completing trip:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted };
