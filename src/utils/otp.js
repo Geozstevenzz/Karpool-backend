@@ -8,6 +8,10 @@ const sendOtp = async (email, mobile_number, otp) => {
             user: `${process.env.GMAIL_USERNAME}@gmail.com`,
             pass: `${process.env.GMAIL_PASSWORD}`,
         },
+        // can remove tls if required
+        tls: {
+            rejectUnauthorized: false, // bypass certificate verification
+        },
     });
 
     const message = {
