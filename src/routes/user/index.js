@@ -7,7 +7,7 @@ const authenticateUser = require("../../middlewares/authenticateUser");
 
 router.post("/signup", userSignup);
 router.post("/validateOtp", validateOTP);
-router.get("/login", loginHandler);
+router.post("/login", loginHandler);
 router.get("/upcomingTrips", authenticateUser, getUpcomingTrips);
 router.get("/allUserTrips", authenticateUser, getAllTrips)
 
