@@ -36,7 +36,8 @@ const getTripsHandler = async (req , res) => {
             vehicles.vehiclenumber,
             vehicles.vehicleaverage
           FROM trips
-          JOIN users ON trips.driverid = users.userid
+          JOIN drivers ON trips.driverid = drivers.driverid
+          JOIN users ON drivers.userid = users.userid
           JOIN vehicles ON trips.vehicleid = vehicles.vehicleid
           WHERE 
             ST_DistanceSphere(startlocation, ST_SetSRID(ST_Point($1, $2), 4326)) <= $3
