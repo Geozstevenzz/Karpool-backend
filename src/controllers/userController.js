@@ -119,11 +119,12 @@ const loginHandler = async (req, res) => {
 const getUpcomingTrips = async (req, res) => {
     try {
         const userId = req.user;
+        console.log(userId)
 
         const upcomingTrips = await pool.query(
             `SELECT * FROM Trips 
-             WHERE (DriverID = (SELECT DriverID FROM Drivers WHERE UserID = $1) 
-             OR TripID IN (SELECT TripID FROM Passengers WHERE UserID = $1))
+             WHERE (DriverID IN (SELECT DriverID from Drivers WHERE UserID = $1)
+             OR TripID IN (SELECT TripID FROM Trippassengers WHERE passengerID = $1))
              AND Status = 'upcoming'`,
             [userId]
         );
@@ -142,8 +143,9 @@ const getAllTrips = async (req, res) => {
 
         const allTrips = await pool.query(
             `SELECT * FROM Trips 
-             WHERE (DriverID = (SELECT DriverID FROM Drivers WHERE UserID = $1) 
-             OR TripID IN (SELECT TripID FROM Passengers WHERE UserID = $1))`,
+             WHERE (DriverID IN (SELECT DriverID from Drivers WHERE UserID = $1)
+             OR TripID IN (SELECT TripID FROM Trippassengers WHERE passengerID = $1))
+             AND Status = 'completed'`,
             [userId]
         );
 
