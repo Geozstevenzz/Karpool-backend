@@ -106,18 +106,84 @@ const tripJoinReq = async (req, res) => {
   try {
       const { tripId, passengerId } = req.body;
 
+      // Check available passenger slots
+      const { rows } = await pool.query(
+          `SELECT NumberOfPassengers FROM Trips WHERE TripID = $1`,
+          [tripId]
+      );
+
+      if (rows.length === 0) {
+          return res.status(404).json({ message: 'Trip not found' });
+      }
+
+      const availableSlots = rows[0].numberofpassengers;
+      if (availableSlots <= 0) {
+          return res.status(400).json({ message: 'No available slots for this trip' });
+      }
+
       const result = await pool.query(
           `INSERT INTO TripRequests (TripID, PassengerID, Status) 
-           VALUES ($1, $2, 'PENDING') RETURNING RequestID`,
+           VALUES ($1, $2, 'PENDING') 
+           RETURNING RequestID`,
           [tripId, passengerId]
       );
 
-      res.json({ message: "Trip join request sent", requestId: result.rows[0].requestid });
+      res.status(201).json({
+          message: 'Trip join request sent',
+          requestId: result.rows[0].requestid,
+      });
 
   } catch (err) {
-      console.error("Error requesting to join trip:", err);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error requesting to join trip:', err);
+      res.status(500).json({ message: 'Server error' });
   }
 };
 
-module.exports = { getTripsHandler, tripJoinReq }
+const getUserActiveRequests = async (req, res) => {
+  try {
+      const userId = req.user.userId;
+
+      const result = await pool.query(
+          `SELECT 
+              tr.RequestID,
+              tr.Status,
+              t.TripID,
+              t.StartLocation,
+              t.Destination,
+              t.Date,
+              t.Time
+          FROM TripRequests tr
+          JOIN Trips t ON tr.TripID = t.TripID
+          JOIN Passengers p ON tr.PassengerID = p.PassengerID
+          WHERE p.UserID = $1
+            AND t.Status != 'COMPLETED'
+            AND (t.Date > CURRENT_DATE OR (t.Date = CURRENT_DATE AND t.Time > CURRENT_TIME))`,
+          [userId]
+      );
+
+      if (result.rowCount === 0) {
+          return res.status(200).json({ message: 'No active trip requests found', tripRequests: [] });
+      }
+
+      res.status(200).json({
+          activeRequests: result.rows.map(row => ({
+              requestId: row.requestid,
+              status: row.status,
+              trip: {
+                  tripId: row.tripid,
+                  startLocation: row.startlocation,
+                  destination: row.destination,
+                  date: row.date,
+                  time: row.time
+              }
+          }))
+      });
+
+  } catch (err) {
+      console.error('Error fetching active trip requests:', err);
+      res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+module.exports = { getTripsHandler, tripJoinReq, getUserActiveRequests }
