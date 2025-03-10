@@ -9,7 +9,7 @@ router.post("/registerVehicle",authenticateUser, registerVehicle);
 router.post("/acceptPassengerReq",authenticateUser, acceptPassengerReq)
 router.post("/rejectPassengerReq", authenticateUser, rejectPassengerReq);
 router.post("/trips/:tripId/complete", authenticateUser, tripCompleted)
-router.post("/getTripRequests", authenticateUser, getTripRequests);
+router.get("/trips/:tripId/requests", authenticateUser, getTripRequests);
 
 
 module.exports = router;

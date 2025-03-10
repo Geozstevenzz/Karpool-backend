@@ -259,7 +259,7 @@ const tripCompleted = async (req, res) => {
 const getTripRequests = async (req, res) => {
     try {
         const { tripId } = req.params;
-        const userId = req.user.userId; // Get user ID from request
+        const userId = req.user;
 
         // Check if the trip exists and was created by the requesting driver
         const tripCheck = await pool.query(
@@ -274,17 +274,15 @@ const getTripRequests = async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to view these trip requests' });
         }
 
-        // Fetch trip requests for the given trip
         const result = await pool.query(
             `SELECT 
                 tr.RequestID,
                 tr.Status,
                 u.UserID,
-                u.FullName,
+                u.username,
                 u.Email
             FROM TripRequests tr
-            JOIN Passengers p ON tr.PassengerID = p.PassengerID
-            JOIN Users u ON p.UserID = u.UserID
+            JOIN Users u ON tr.PassengerID = u.UserID
             WHERE tr.TripID = $1`,
             [tripId]
         );
@@ -300,7 +298,7 @@ const getTripRequests = async (req, res) => {
                 status: row.status,
                 passenger: {
                     userId: row.userid,
-                    fullName: row.fullname,
+                    username: row.username,
                     email: row.email
                 }
             }))
@@ -311,6 +309,7 @@ const getTripRequests = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 
 
 
