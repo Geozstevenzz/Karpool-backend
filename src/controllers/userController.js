@@ -118,34 +118,38 @@ const loginHandler = async (req, res) => {
 
 const getUpcomingTrips = async (req, res) => {
     try {
-        const userId = req.user;
-        console.log(userId)
-
-        const upcomingTrips = await pool.query(
-            `SELECT * FROM Trips 
-             WHERE (DriverID IN (SELECT DriverID from Drivers WHERE UserID = $1)
-             OR TripID IN (SELECT TripID FROM Trippassengers WHERE passengerID = $1))
-             AND Status = 'upcoming'`,
-            [userId]
-        );
-
-        res.json({ upcomingTrips: upcomingTrips.rows });
-
-    } catch (err) {
-        console.error("Error fetching upcoming trips:", err);
-        res.status(500).json({ message: "Server error" });
+      const userID = req.user;
+  
+      const query = `
+        SELECT t.*, u.username AS driverName
+        FROM trips t
+        JOIN drivers d ON t.driverid = d.driverid
+        JOIN users u ON d.userid = u.userid
+        WHERE t.tripdate >= CURRENT_DATE
+        AND d.userid = $1
+        ORDER BY t.tripdate ASC
+      `;
+  
+      const { rows } = await pool.query(query, [userID]);
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching upcoming trips:', error);
+      res.status(500).json({ error: 'An error occurred while fetching upcoming trips' });
     }
-};
+  };
+  
 
 const getAllTrips = async (req, res) => {
     try {
         const userId = req.user;
 
         const allTrips = await pool.query(
-            `SELECT * FROM Trips 
-             WHERE (DriverID IN (SELECT DriverID from Drivers WHERE UserID = $1)
-             OR TripID IN (SELECT TripID FROM Trippassengers WHERE passengerID = $1))
-             AND Status = 'completed'`,
+            `SELECT t.*, u.username AS driverName
+            FROM trips t
+            JOIN drivers d ON t.driverid = d.driverid
+            JOIN users u ON d.userid = u.userid
+            WHERE d.userid = $1 AND Status = 'completed'
+            ORDER BY t.tripdate DESC`,
             [userId]
         );
 

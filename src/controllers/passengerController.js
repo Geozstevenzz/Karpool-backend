@@ -150,6 +150,8 @@ const getUserActiveRequests = async (req, res) => {
                   t.TripID,
                   t.StartLocation,
                   t.DestinationLocation,
+                  t.destinationName,
+                  t.sourcename,
                   t.TripDate,
                   t.TripTime,
                   u.username,
@@ -176,7 +178,9 @@ const getUserActiveRequests = async (req, res) => {
                       startLocation: row.startlocation,
                       destination: row.destinationlocation,
                       date: row.tripdate,
-                      time: row.triptime
+                      time: row.triptime, 
+                      sourceName: row.sourceName,
+                      destinationName: row.destinationName
                   },
                   passenger: {
                       userId: userId,
