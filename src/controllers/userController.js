@@ -77,7 +77,7 @@ const loginHandler = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT users.userid, users.username, users.userphone, users.userinterests, users.isdriver, users.password, users.profile_photo, users.email, users.address, drivers.driverid FROM users LEFT JOIN drivers ON users.userid = drivers.userid WHERE email = $1 AND otp IS NULL',
+            'SELECT users.userid, users.username, users.userphone, users.userinterests, users.isdriver, users.password, users.profile_photo, users.email, users.address, drivers.driverid, vehicles.vehicleid FROM users LEFT JOIN drivers ON users.userid = drivers.userid LEFT JOIN vehicles ON vehicles.driverid = drivers.driverid WHERE email = $1 AND otp IS NULL',
             [email]
         );
 
