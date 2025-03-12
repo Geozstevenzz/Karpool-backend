@@ -161,6 +161,106 @@ const getAllTrips = async (req, res) => {
     }
 };
 
+const submitReview = async (req, res) => {
+    const {
+      tripid,
+      driverid,
+      passengerid,
+      reviewfrom,
+      reviewfor,
+      rating,
+      review,
+    } = req.body;
+  
+    if (!tripid || !driverid || !passengerid || !reviewfrom || !reviewfor || !rating) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+  
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+  
+    if (!['driver', 'passenger'].includes(reviewfrom) || !['driver', 'passenger'].includes(reviewfor)) {
+      return res.status(400).json({ error: 'Invalid reviewfrom or reviewfor value' });
+    }
+  
+    if (reviewfrom === reviewfor) {
+      return res.status(400).json({ error: 'reviewfrom and reviewfor cannot be the same' });
+    }
+  
+    try {
+      // Check if the trip exists and the driver is assigned to it
+      const tripCheck = await pool.query(
+        `SELECT driverid 
+         FROM trips 
+         WHERE tripid = $1 AND driverid = $2 AND status = 'completed'`,
+        [tripid, driverid]
+      );
+  
+      if (tripCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Trip not found or driver not assigned to this trip' });
+      }
+  
+      // Check if the passenger is part of the trip
+      const passengerCheck = await pool.query(
+        `SELECT passengerid 
+         FROM trippassengers 
+         WHERE tripid = $1 AND passengerid = $2`,
+        [tripid, passengerid]
+      );
+  
+      if (passengerCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Passenger not part of this trip' });
+      }
+  
+      // Insert the review into the database
+      await pool.query(
+        `INSERT INTO reviews ( tripid, passengerid, reviewfrom, reviewfor, rating, review)
+         VALUES ($1, $2, $3, $4, $5, $6 )`,
+        [ tripid, passengerid, reviewfrom, reviewfor, rating, review]
+      );
+  
+      res.status(201).json({ message: 'Review submitted successfully.' });
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+const getReviewsForUser = async (req, res) => {
+    const userid = 21;
+
+    try {
+        
+        // Get all reviews where the user is the one being reviewed
+        const reviews = await pool.query(
+            `
+            SELECT 
+                r.reviewid,
+                r.tripid,
+                r.reviewfrom,
+                r.rating,
+                r.review
+            FROM reviews r
+            JOIN trips t ON r.tripid = t.tripid
+            WHERE 
+                (r.reviewfor = 'driver' AND t.driverid = $1) OR
+                (r.reviewfor = 'passenger' AND r.passengerid = $1)
+            ORDER BY r.reviewid DESC
+            `,
+            [userid]
+        );
+
+        res.status(200).json({
+            userid,
+            reviews: reviews.rows
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips }
+
+module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser }
