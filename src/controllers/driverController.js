@@ -266,6 +266,9 @@ const tripStart = async (req, res) => {
         const userId = req.user; 
         const { tripId } = req.params; 
 
+        console.log("TripID:",tripId);
+        console.log("UserID:",userId)
+
         // Check if the user is the driver of the trip
         const driverCheck = await pool.query(
             `SELECT TripID FROM Trips WHERE TripID = $1 AND status = 'upcoming' AND DriverID = 
