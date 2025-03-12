@@ -330,10 +330,10 @@ const getTripRequests = async (req, res) => {
 
         res.status(200).json({
             tripId,
+            numberofpassengers: row.numberofpassengers,
             tripRequests: result.rows.map(row => ({
                 requestId: row.requestid,
                 status: row.status,
-                numberofpassengers: row.numberofpassengers,
                 passenger: {
                     userId: row.userid,
                     username: row.username,
