@@ -333,11 +333,11 @@ const getTripRequests = async (req, res) => {
             tripRequests: result.rows.map(row => ({
                 requestId: row.requestid,
                 status: row.status,
+                numberofpassengers: row.numberofpassengers,
                 passenger: {
                     userId: row.userid,
                     username: row.username,
-                    email: row.email,
-                    numberofpassengers: row.numberofpassengers
+                    email: row.email
                 }
             }))
         });
