@@ -238,7 +238,7 @@ const tripCompleted = async (req, res) => {
 
         // Check if the user is the driver of the trip
         const driverCheck = await pool.query(
-            `SELECT TripID FROM Trips WHERE TripID = $1 AND DriverID = 
+            `SELECT TripID FROM Trips WHERE TripID = $1 AND status = 'ongoing' AND DriverID = 
              (SELECT DriverID FROM Drivers WHERE UserID = $2)`,
             [tripId, userId]
         );
@@ -254,6 +254,36 @@ const tripCompleted = async (req, res) => {
         );
 
         res.json({ message: "Trip marked as completed successfully" });
+
+    } catch (err) {
+        console.error("Error completing trip:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const tripStart = async (req, res) => {
+    try {
+        const userId = req.user; 
+        const { tripId } = req.params; 
+
+        // Check if the user is the driver of the trip
+        const driverCheck = await pool.query(
+            `SELECT TripID FROM Trips WHERE TripID = $1 AND status = 'upcoming' AND DriverID = 
+             (SELECT DriverID FROM Drivers WHERE UserID = $2)`,
+            [tripId, userId]
+        );
+
+        if (driverCheck.rows.length === 0) {
+            return res.status(403).json({ message: "Incorrect information supplied or action not authorized" });
+        }
+
+        // Update trip status to 'ongoing'
+        await pool.query(
+            `UPDATE Trips SET Status = 'ongoing' WHERE TripID = $1`,
+            [tripId]
+        );
+
+        res.json({ message: "Trip marked as ongoing successfully" });
 
     } catch (err) {
         console.error("Error completing trip:", err);
@@ -283,6 +313,7 @@ const getTripRequests = async (req, res) => {
             `SELECT 
                 tr.RequestID,
                 tr.Status,
+                tr.numberofpassengers
                 u.UserID,
                 u.username,
                 u.Email
@@ -304,7 +335,8 @@ const getTripRequests = async (req, res) => {
                 passenger: {
                     userId: row.userid,
                     username: row.username,
-                    email: row.email
+                    email: row.email,
+                    numberofpassengers: row.numberofpassengers
                 }
             }))
         });
@@ -318,4 +350,4 @@ const getTripRequests = async (req, res) => {
 
 
 
-module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests };
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart };
