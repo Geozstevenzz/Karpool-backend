@@ -135,7 +135,7 @@ const acceptPassengerReq = async (req, res) => {
 
         // Check available slots
         const { rows } = await client.query(
-            `SELECT NumberOfPassengers FROM Trips WHERE TripID = $1`,
+            `SELECT NumberOfPassengers, totalseats FROM Trips WHERE TripID = $1 AND status = 'upcoming'`,
             [tripId]
         );
 
@@ -144,7 +144,9 @@ const acceptPassengerReq = async (req, res) => {
             return res.status(404).json({ message: 'Trip not found' });
         }
 
-        const availableSlots = rows[0].numberofpassengers;
+        console.log(rows[0])
+
+        const availableSlots = rows[0].totalseats - rows[0].numberofpassengers ;
         if (availableSlots <= 0) {
             await client.query('ROLLBACK');
             return res.status(400).json({ message: 'No available slots for this trip' });
@@ -154,7 +156,7 @@ const acceptPassengerReq = async (req, res) => {
         const updateRequest = await client.query(
             `UPDATE TripRequests 
              SET Status = 'ACCEPTED' 
-             WHERE RequestID = $1 AND TripID = $2 
+             WHERE RequestID = $1 AND TripID = $2 AND Status = 'PENDING' 
              RETURNING PassengerID`,
             [requestId, tripId]
         );
@@ -173,10 +175,10 @@ const acceptPassengerReq = async (req, res) => {
             [tripId, passengerId]
         );
 
-        // Reduce available slots
+        // Increase passenger count
         await client.query(
             `UPDATE Trips 
-             SET NumberOfPassengers = NumberOfPassengers - 1 
+             SET NumberOfPassengers = NumberOfPassengers + 1 
              WHERE TripID = $1`,
             [tripId]
         );
