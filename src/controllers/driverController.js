@@ -313,12 +313,13 @@ const getTripRequests = async (req, res) => {
             `SELECT 
                 tr.RequestID,
                 tr.Status,
-                tr.numberofpassengers
+                t.numberofpassengers,
                 u.UserID,
                 u.username,
                 u.Email
             FROM TripRequests tr
             JOIN Users u ON tr.PassengerID = u.UserID
+            JOIN trips as t ON tr.tripID = t.tripID
             WHERE tr.TripID = $1`,
             [tripId]
         );
