@@ -313,13 +313,11 @@ const getTripRequests = async (req, res) => {
             `SELECT 
                 tr.RequestID,
                 tr.Status,
-                t.numberofpassengers,
                 u.UserID,
                 u.username,
                 u.Email
             FROM TripRequests tr
             JOIN Users u ON tr.PassengerID = u.UserID
-            JOIN trips as t ON tr.tripID = t.tripID
             WHERE tr.TripID = $1`,
             [tripId]
         );
@@ -330,7 +328,6 @@ const getTripRequests = async (req, res) => {
 
         res.status(200).json({
             tripId,
-            numberofpassengers: row.numberofpassengers,
             tripRequests: result.rows.map(row => ({
                 requestId: row.requestid,
                 status: row.status,
