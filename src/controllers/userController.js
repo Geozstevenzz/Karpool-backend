@@ -35,11 +35,6 @@ const userSignup = async (req, res) => {
         const { rows } = await pool.query(query, values);
 
         await sendOtp(email, phone, otp);
-        await pool.query(
-            `INSERT INTO Passengers (UserID) 
-             SELECT $1 WHERE NOT EXISTS (SELECT 1 FROM Passengers WHERE UserID = $1)`,
-            [rows[0].userid]
-        );
 
         res.status(201).json({ message: "User registered successfully", user: rows[0] });
     } catch (error) {
@@ -261,6 +256,87 @@ const getReviewsForUser = async (req, res) => {
     }
 };
 
+const createBookmark =  async (req, res) => {
+    const { userid, location, coordinates } = req.body;
+  
+    // Validation
+    if (!userid || !location || !coordinates.longitude || ! coordinates.latitude) {
+      return res.status(400).json({ error: 'Invalid request payload' });
+    }
+  
+    try {
+      // Insert bookmark
+      const result = await pool.query(
+        `INSERT INTO bookmarks (userid, location, coordinates) 
+         VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326)) 
+         RETURNING bookmarkid`,
+        [userid, location, coordinates.longitude, coordinates.latitude]
+      );
+  
+      if (result.rowCount === 0) {
+        return res.status(409).json({ error: 'Something went wrong!!' });
+      }
+  
+      return res.status(201).json({ message: 'Bookmark added successfully.' });
+    } catch (error) {
+      console.error('Error adding bookmark:', error);
+      return res.status(500).json({ error: 'Database/server error' });
+    }
+  };
+  
+  
+  const deleteBookmark = async (req, res) => {
+    const { bookmarkid } = req.body;
+    const userid = req.user;
+  
+    // Validation
+    if (!bookmarkid) {
+      return res.status(400).json({ error: 'Invalid request payload' });
+    }
+  
+    try {
+      const result = await pool.query(
+        `DELETE FROM bookmarks WHERE bookmarkid = $1 AND userid = $2 RETURNING bookmarkid`,
+        [bookmarkid, userid]
+      );
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Bookmark does not exist' });
+      }
+  
+      return res.status(200).json({ message: 'Bookmark removed successfully.' });
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+      return res.status(500).json({ error: 'Database/server error' });
+    }
+  };
+  
+  
+const getAllBookmarks = async (req, res) => {
+    const userid  = req.user;
+  
+    // Validation
+    if (!userid) {
+        return res.status(400).json({ error: 'Invalid userid' });
+    }
+  
+    try {
+        const result = await pool.query(
+            `SELECT location, bookmarkid, ST_X(coordinates) AS longitude, ST_Y(coordinates) AS latitude FROM bookmarks WHERE userid = $1`,
+            [userid]
+        );
+    
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'No bookmarks found for user' });
+        }
+    
+        return res.status(200).json({ userid, bookmarks: result.rows });
+    } catch (error) {
+        console.error('Error retrieving bookmarks:', error);
+        return res.status(500).json({ error: 'Database/server error' });
+    }
+};
 
 
-module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser }
+
+module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser, createBookmark, deleteBookmark, getAllBookmarks }
