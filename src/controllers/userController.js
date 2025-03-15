@@ -258,6 +258,12 @@ const getReviewsForUser = async (req, res) => {
 
 const createBookmark =  async (req, res) => {
     const { userid, location, coordinates } = req.body;
+
+    console.log("Inside createBookmark Function.")
+    console.log("UserID:",userid);
+    console.log("Location:",location);
+    console.log("Coordinates:",coordinates);
+    console.log('\n\n');
   
     // Validation
     if (!userid || !location || !coordinates.longitude || ! coordinates.latitude) {
