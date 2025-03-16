@@ -141,61 +141,132 @@ const tripJoinReq = async (req, res) => {
 
 const getUserActiveRequests = async (req, res) => {
     try {
-          const userId = req.user;
+        const userId = req.user;
+
+        const result = await pool.query(
+            `SELECT 
+                tr.RequestID,
+                tr.Status,
+                t.TripID,
+                t.StartLocation,
+                t.DestinationLocation,
+                t.destinationName,
+                t.sourcename,
+                t.TripDate,
+                t.TripTime,
+                u.username,
+                u.Email
+            FROM TripRequests tr
+            JOIN Trips t ON tr.TripID = t.TripID
+            JOIN Users u ON tr.PassengerID = u.UserID
+            WHERE u.UserID = $1
+            AND t.Status != 'COMPLETED'
+            AND (t.TripDate > CURRENT_DATE OR (t.TripDate = CURRENT_DATE AND t.TripTime > CURRENT_TIME))`,
+            [userId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(200).json({ message: 'No active trip requests found', tripRequests: [] });
+        }
+
+        res.status(200).json({
+            tripRequests: result.rows.map(row => ({
+                requestId: row.requestid,
+                status: row.status,
+                trip: {
+                    tripId: row.tripid,
+                    startLocation: row.startlocation,
+                    destination: row.destinationlocation,
+                    date: row.tripdate,
+                    time: row.triptime, 
+                    sourceName: row.sourceName,
+                    destinationName: row.destinationName
+                },
+                passenger: {
+                    userId: userId,
+                    username: row.username,
+                    email: row.email
+                }
+            }))
+        });
   
-          const result = await pool.query(
-              `SELECT 
-                  tr.RequestID,
-                  tr.Status,
-                  t.TripID,
-                  t.StartLocation,
-                  t.DestinationLocation,
-                  t.destinationName,
-                  t.sourcename,
-                  t.TripDate,
-                  t.TripTime,
-                  u.username,
-                  u.Email
-              FROM TripRequests tr
-              JOIN Trips t ON tr.TripID = t.TripID
-              JOIN Users u ON tr.PassengerID = u.UserID
-              WHERE u.UserID = $1
-              AND t.Status != 'COMPLETED'
-              AND (t.TripDate > CURRENT_DATE OR (t.TripDate = CURRENT_DATE AND t.TripTime > CURRENT_TIME))`,
-              [userId]
-          );
+    } catch (err) {
+        console.error('Error fetching active trip requests:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
   
-          if (result.rowCount === 0) {
-              return res.status(200).json({ message: 'No active trip requests found', tripRequests: [] });
-          }
-  
-          res.status(200).json({
-              tripRequests: result.rows.map(row => ({
-                  requestId: row.requestid,
-                  status: row.status,
-                  trip: {
-                      tripId: row.tripid,
-                      startLocation: row.startlocation,
-                      destination: row.destinationlocation,
-                      date: row.tripdate,
-                      time: row.triptime, 
-                      sourceName: row.sourceName,
-                      destinationName: row.destinationName
-                  },
-                  passenger: {
-                      userId: userId,
-                      username: row.username,
-                      email: row.email
-                  }
-              }))
-          });
-  
-      } catch (err) {
-          console.error('Error fetching active trip requests:', err);
-          res.status(500).json({ message: 'Server error' });
-      }
-  };
-  
+const getPassengerUpcomingTrips = async (req, res) => {
+    const userid = req.user;
+
+    try {
+        const result = await pool.query(
+            `SELECT trips.*, users.username AS drivername
+             FROM trips 
+             JOIN trippassengers ON trips.tripid = trippassengers.tripid
+             JOIN users ON users.userid = trips.driverid
+             WHERE trippassengers.passengerid = $1 AND trips.status = 'upcoming'`,
+             [userid]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(200).json({ message: 'No upcoming trips found' });
+        }
+
+        return res.status(200).json( result.rows );
+    } catch (err) {
+        console.error('Error fetching active trip requests:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getPassengerOngoingTrips = async (req, res) => {
+    const userid = req.user;
+
+    try {
+        const result = await pool.query(
+            `SELECT trips.*, users.username AS drivername
+             FROM trips 
+             JOIN trippassengers ON trips.tripid = trippassengers.tripid
+             JOIN users ON users.userid = trips.driverid
+             WHERE trippassengers.passengerid = $1 AND trips.status = 'ongoing'`,
+             [userid]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(200).json({ message: 'No upcoming trips found' });
+        }
+
+        return res.status(200).json( result.rows );
+    } catch (err) {
+        console.error('Error fetching active trip requests:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getPassengerCompletedTrips = async (req, res) => {
+    const userid = req.user;
+
+    try {
+        const result = await pool.query(
+            `SELECT trips.*, users.username AS drivername
+             FROM trips 
+             JOIN trippassengers ON trips.tripid = trippassengers.tripid
+             JOIN users ON users.userid = trips.driverid
+             WHERE trippassengers.passengerid = $1 AND trips.status = 'completed'`,
+             [userid]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(200).json({ message: 'No upcoming trips found' });
+        }
+
+        return res.status(200).json( result.rows );
+    } catch (err) {
+        console.error('Error fetching active trip requests:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 
-module.exports = { getTripsHandler, tripJoinReq, getUserActiveRequests }
+module.exports = { getTripsHandler, tripJoinReq, getUserActiveRequests, getPassengerUpcomingTrips, getPassengerCompletedTrips, getPassengerOngoingTrips }
