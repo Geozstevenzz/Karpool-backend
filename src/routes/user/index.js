@@ -16,7 +16,7 @@ router.get("/getReviews", authenticateUser, getReviewsForUser);
 router.post("/bookmark/create", authenticateUser, createBookmark);
 router.post("/bookmark/delete", authenticateUser, deleteBookmark);
 router.get("/bookmark/all", authenticateUser, getAllBookmarks);
-router.post("/profile/photo/upload", authenticateUser, upload.single('profile_picture'), uploadProfilePicture);
+router.post("/profile/photo/upload", upload.single('profile_picture'), uploadProfilePicture);
 
 
 module.exports = router;
