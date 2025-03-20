@@ -2,13 +2,14 @@ const pool = require('../utils/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const sendOtp = require('../utils/otp');
+const cloudinary = require('../utils/cloudinaryConfig');
 require('dotenv').config();
 
 
 const userSignup = async (req, res) => {
     console.log("Signup enterd");
     try {
-        const { name, email, phone, address, password } = req.body;
+        const { name, email, phone, address, password, gender } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
         let otp = Math.random().toFixed(6);
         otp = (otp * 1000000).toString();
@@ -16,7 +17,7 @@ const userSignup = async (req, res) => {
         const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 10 minutes
 
         
-        if (!name || !phone || !email || !address || !password) {
+        if (!name || !phone || !email || !address || !password || !gender) {
             return res.status(400).json({ error: "Some data is missing." });
         }
 
@@ -26,11 +27,11 @@ const userSignup = async (req, res) => {
         }
         
         const query = `
-            INSERT INTO Users (UserName, UserPhone, email, address, password, otp, otp_expiry)
-            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+            INSERT INTO Users (UserName, UserPhone, email, address, password, otp, otp_expiry, gender)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
         `;
 
-        const values = [name, phone, email, address, hashedPassword, otp || null, otpExpiry || null];
+        const values = [name, phone, email, address, hashedPassword, otp || null, otpExpiry || null, gender];
 
         const { rows } = await pool.query(query, values);
 
@@ -72,7 +73,7 @@ const loginHandler = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT users.userid, users.username, users.userphone, users.userinterests, users.password, users.isdriver, users.profile_photo, users.email, users.address, drivers.driverid, vehicles.vehicleid FROM users LEFT JOIN drivers ON users.userid = drivers.userid LEFT JOIN vehicles ON vehicles.driverid = drivers.driverid WHERE email = $1 AND otp IS NULL',
+            'SELECT users.userid, users.username, users.userphone, users.gender, users.userinterests, users.password, users.isdriver, users.profile_photo, users.email, users.address, drivers.driverid, vehicles.vehicleid FROM users LEFT JOIN drivers ON users.userid = drivers.userid LEFT JOIN vehicles ON vehicles.driverid = drivers.driverid WHERE email = $1 AND otp IS NULL',
             [email]
         );
 
@@ -343,6 +344,44 @@ const getAllBookmarks = async (req, res) => {
     }
 };
 
+const uploadProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Wrap cloudinary upload_stream in a Promise
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: 'profile_pictures' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+
+      // Send the buffer to Cloudinary
+      uploadStream.end(req.file.buffer);
+    });
+
+    // Store the image URL in Postgres
+    const query = `UPDATE users SET profile_photo = $1 WHERE userid = $2`;
+    await pool.query(query, [result.secure_url, userId]);
+
+    console.log(result.secure_url);
+
+    return res.status(200).json({ message: 'Profile picture updated', url: result.secure_url });
+
+  } catch (err) {
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+};
 
 
-module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser, createBookmark, deleteBookmark, getAllBookmarks }
+
+
+module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser, createBookmark, deleteBookmark, getAllBookmarks, uploadProfilePicture }

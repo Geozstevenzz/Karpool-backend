@@ -31,10 +31,12 @@ const getTripsHandler = async (req , res) => {
             ST_DistanceSphere(startlocation, ST_SetSRID(ST_Point($1, $2), 4326)) AS distance,
             users.username,
             users.profile_photo,
+            users.gender,
             vehicles.vehiclename,
             vehicles.vehiclecolor,
             vehicles.vehiclenumber,
-            vehicles.vehicleaverage
+            vehicles.vehicleaverage,
+            vehicles.vehicle_photo
           FROM trips
           JOIN drivers ON trips.driverid = drivers.driverid
           JOIN users ON drivers.userid = users.userid
@@ -87,11 +89,13 @@ const getTripsHandler = async (req , res) => {
                 distance: distanceInKm.toFixed(2), // Distance in km rounded to 2 decimal places
                 estimatedTime: `${estimatedTimeInMinutes} minutes`, // Estimated time in minutes
                 username: row.username,
+                gender: row.gender,
                 profile_photo: row.profile_photo,
                 vehiclename: row.vehiclename,
                 vehiclecolor: row.vehiclecolor,
                 vehiclenumber: row.vehiclenumber,
                 vehicleaverage: row.vehicleaverage,
+                vehiclephoto: row.vehiclephoto,
             };
         });
     

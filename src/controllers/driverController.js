@@ -1,4 +1,5 @@
 const pool = require("../utils/db");
+const cloudinary = require('../utils/cloudinaryConfig');
 
 
 const createTripHandler = async (req, res) => {
@@ -13,20 +14,19 @@ const createTripHandler = async (req, res) => {
       time,
       userID,
       vehicleID,
-      sourceName, // New field
-      destinationName // New field
+      sourceName, 
+      destinationName 
     } = req.body;
   
     if (!dates || !Array.isArray(dates) || dates.length === 0) {
       return res.status(400).json({ error: 'Invalid or missing dates array' });
     }
   
-    // Start a transaction
+    
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
   
-      // Fetch the driverid using the provided userID
       const driverQuery = 'SELECT driverid FROM drivers WHERE userid = $1';
       const driverResult = await client.query(driverQuery, [userID]);
       if (driverResult.rows.length === 0) {
@@ -35,7 +35,6 @@ const createTripHandler = async (req, res) => {
       }
       const driverID = driverResult.rows[0].driverid;
   
-      // Insert a trip for each date using the fetched driverID
       for (const tripDate of dates) {
         const query = `
           INSERT INTO trips (
@@ -51,7 +50,7 @@ const createTripHandler = async (req, res) => {
         `;
   
         const values = [
-          driverID, // Use fetched driverID
+          driverID, 
           vehicleID,
           parseInt(stops, 10),
           locationMarker.longitude,
@@ -62,8 +61,8 @@ const createTripHandler = async (req, res) => {
           time,
           tripDate,
           parseInt(seats, 10),
-          sourceName, // New value
-          destinationName // New value
+          sourceName, 
+          destinationName 
         ];
   
         await client.query(query, values);
@@ -349,6 +348,44 @@ const getTripRequests = async (req, res) => {
 };
 
 
+const uploadVehiclePicture = async (req, res) => {
+    try {
+      const { vehicleId } = req.body;
+  
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+  
+      // Wrap cloudinary upload_stream in a Promise
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: 'vehicle_pictures' },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+  
+        // Send the buffer to Cloudinary
+        uploadStream.end(req.file.buffer);
+      });
+  
+      // Store the image URL in Postgres
+      const query = `UPDATE vehicles SET vehicle_photo = $1 WHERE vehicleid = $2`;
+      await pool.query(query, [result.secure_url, vehicleId]);
+  
+      console.log(result.secure_url);
+  
+      return res.status(200).json({ message: 'Vehicle picture updated', url: result.secure_url });
+  
+    } catch (err) {
+      if (!res.headersSent) {
+        return res.status(500).json({ error: err.message });
+      }
+    }
+  };
 
 
-module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart };
+
+
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart, uploadVehiclePicture };
