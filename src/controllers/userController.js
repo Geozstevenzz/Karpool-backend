@@ -346,7 +346,7 @@ const getAllBookmarks = async (req, res) => {
 
 const uploadProfilePicture = async (req, res) => {
   try {
-    const userId = req.user;
+    const { userId } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
