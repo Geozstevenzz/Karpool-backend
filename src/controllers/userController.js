@@ -333,10 +333,6 @@ const getAllBookmarks = async (req, res) => {
             [userid]
         );
     
-        if (result.rowCount === 0) {
-            return res.status(404).json({ error: 'No bookmarks found for user' });
-        }
-    
         return res.status(200).json({ userid, bookmarks: result.rows });
     } catch (error) {
         console.error('Error retrieving bookmarks:', error);
