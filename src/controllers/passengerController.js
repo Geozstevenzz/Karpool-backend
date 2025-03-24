@@ -95,7 +95,7 @@ const getTripsHandler = async (req , res) => {
                 vehiclecolor: row.vehiclecolor,
                 vehiclenumber: row.vehiclenumber,
                 vehicleaverage: row.vehicleaverage,
-                vehiclephoto: row.vehiclephoto,
+                vehiclephoto: row.vehicle_photo,
             };
         });
     
