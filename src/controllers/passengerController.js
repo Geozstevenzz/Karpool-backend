@@ -208,7 +208,8 @@ const getPassengerUpcomingTrips = async (req, res) => {
             `SELECT trips.*, users.username AS drivername
              FROM trips 
              JOIN trippassengers ON trips.tripid = trippassengers.tripid
-             JOIN users ON users.userid = trips.driverid
+             JOIN drivers ON drivers.driverid = trips.driverid
+             JOIN users ON users.userid = drivers.userid
              WHERE trippassengers.passengerid = $1 AND trips.status = 'upcoming'`,
              [userid]
         );
@@ -232,7 +233,8 @@ const getPassengerOngoingTrips = async (req, res) => {
             `SELECT trips.*, users.username AS drivername
              FROM trips 
              JOIN trippassengers ON trips.tripid = trippassengers.tripid
-             JOIN users ON users.userid = trips.driverid
+             JOIN drivers ON drivers.driverid = trips.driverid
+             JOIN users ON users.userid = drivers.userid
              WHERE trippassengers.passengerid = $1 AND trips.status = 'ongoing'`,
              [userid]
         );
@@ -256,7 +258,8 @@ const getPassengerCompletedTrips = async (req, res) => {
             `SELECT trips.*, users.username AS drivername
              FROM trips 
              JOIN trippassengers ON trips.tripid = trippassengers.tripid
-             JOIN users ON users.userid = trips.driverid
+             JOIN drivers ON drivers.driverid = trips.driverid
+             JOIN users ON users.userid = drivers.userid
              WHERE trippassengers.passengerid = $1 AND trips.status = 'completed'`,
              [userid]
         );
