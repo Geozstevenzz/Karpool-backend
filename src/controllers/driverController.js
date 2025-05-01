@@ -385,7 +385,28 @@ const uploadVehiclePicture = async (req, res) => {
     }
   };
 
+  const getUserIdhandler = async (req, res) => {
+    const { driverId } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT userid
+            from drivers
+            WHERE driverid = $1`,
+            [driverId]
+        )
+
+        if (result.rowCount === 0) {
+            return res.status(200).json({ message: 'No driver exists with this ID' });
+        }
+
+        return res.status(200).json({ userId: result.rows[0].userid });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+  };
 
 
 
-module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart, uploadVehiclePicture };
+
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart, uploadVehiclePicture, getUserIdhandler };
