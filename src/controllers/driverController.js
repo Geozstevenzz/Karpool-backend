@@ -406,7 +406,43 @@ const uploadVehiclePicture = async (req, res) => {
     }
   };
 
+const editVehicle = async (req, res) => {
+    const { vehicleid, model, licenseplate, average, color } = req.body;
+    try {
+      const result = await pool.query(`
+        UPDATE vehicles SET
+          vehiclename = $1,
+          vehiclenumber = $2,
+          vehicleaverage = $3,
+          vehiclecolor = $4
+        WHERE vehicleid = $5
+      `, [model, licenseplate, average, color, vehicleid]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'No vehicle found with that vehicleid.' });
+      }
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+};
+const deleteVehicle = async (req, res) => {
+    try {
+        await pool.query('DELETE FROM vehicles WHERE vehicleid = $1', [req.params.vehicleid]);
+        res.sendStatus(200);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+  
+const deleteTrip = async (req, res) => {
+    try {
+      await pool.query('DELETE FROM trips WHERE tripid = $1', [req.params.tripid]);
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+};
 
 
-
-module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, tripCompleted, getTripRequests, tripStart, uploadVehiclePicture, getUserIdhandler };
+module.exports = { createTripHandler, registerVehicle, acceptPassengerReq, rejectPassengerReq, 
+    tripCompleted, getTripRequests, tripStart, uploadVehiclePicture, getUserIdhandler, editVehicle, deleteVehicle, deleteTrip};

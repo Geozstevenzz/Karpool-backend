@@ -18,9 +18,9 @@ router.post("/bookmark/create", authenticateUser, createBookmark);
 router.post("/bookmark/delete", authenticateUser, deleteBookmark);
 router.get("/bookmark/all", authenticateUser, getAllBookmarks);
 router.post("/profile/photo/upload", upload.single('profile_picture'), uploadProfilePicture);
-router.put('/:userid',  editUser);
-router.delete('/:userid',  deleteUser);
-router.patch('/:userid/interests',  updateUserInterests);
+router.put('/:userid', authenticateUser, editUser);
+router.delete('/:userid', authenticateUser, deleteUser);
+router.patch('/:userid/interests', authenticateUser, updateUserInterests);
 
 
 module.exports = router;
