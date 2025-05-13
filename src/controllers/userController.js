@@ -69,7 +69,13 @@ const validateOTP = async (req, res) => {
 };
 
 const loginHandler = async (req, res) => {
+    console.log("login api being hit.");
+    
     const { email, password, platform } = req.body;
+
+    console.log(email);
+    console.log(password);
+    console.log(platform);
 
     try {
         const result = await pool.query(

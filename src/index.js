@@ -6,7 +6,8 @@ const pool = require("./utils/db");
 
 //middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
+
 
 //routes
 app.use("/", require("./routes"));
