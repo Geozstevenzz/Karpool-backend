@@ -383,7 +383,61 @@ const uploadProfilePicture = async (req, res) => {
   }
 };
 
+const editUser = async (req, res) => {
+  const { userid, username, email, userphone, userinterests, address, gender } = req.body;
+  try {
+    const result = await pool.query(`
+      UPDATE users SET
+        username = $1,
+        userphone = $2,
+        userinterests = $3,
+        email = $4,
+        address = $5,
+        gender = $6
+      WHERE userid = $7
+    `, [username, userphone, userinterests, email, address, gender, userid]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'No user found with that userid.' });
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    await pool.query('DELETE FROM users WHERE userid = $1', [req.params.userid]);
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const updateUserInterests = async (req, res) => {
+  const { userid } = req.params;
+  const { interests } = req.body;
+
+  // Check if interests is an array and <= 5 items
+  if (!Array.isArray(interests) || interests.length > 5) {
+    return res.status(400).json({ error: 'Interests must be an array of max 5 items.' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE users SET userinterests = $1 WHERE userid = $2`,
+      [interests, userid]
+    );
+    res.status(200).json({ message: 'Interests updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 
 
-module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser, createBookmark, deleteBookmark, getAllBookmarks, uploadProfilePicture }
+
+module.exports = { userSignup, validateOTP, loginHandler, getUpcomingTrips, getAllTrips, submitReview, getReviewsForUser, 
+  createBookmark, deleteBookmark, getAllBookmarks, uploadProfilePicture , editUser, deleteUser, updateUserInterests}

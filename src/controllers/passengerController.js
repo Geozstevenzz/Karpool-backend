@@ -274,6 +274,7 @@ const getPassengerCompletedTrips = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+  
 
 
 module.exports = { getTripsHandler, tripJoinReq, getUserActiveRequests, getPassengerUpcomingTrips, getPassengerCompletedTrips, getPassengerOngoingTrips }
